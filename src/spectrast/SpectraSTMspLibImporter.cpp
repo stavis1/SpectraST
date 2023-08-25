@@ -119,6 +119,7 @@ void SpectraSTMspLibImporter::readFromFile(string& impFileName) {
     string name = nextToken(line, 5, pos, "\r\n");
     double mw = 0.0;
     double precursorMz = 0.0;
+    int charge = 0;
     string comments("");
     string precursorType("");
     string formula("");
@@ -183,7 +184,7 @@ void SpectraSTMspLibImporter::readFromFile(string& impFileName) {
         pc.done();
         return;
       }
-      mods = nextToken(comments, modsPos + 5, modsPos, " \t\r\n");		
+      mods = nextToken(comments, modsPos + 5, modsPos, " \t\r\n");
     }
     
     // parse out full name
@@ -200,6 +201,28 @@ void SpectraSTMspLibImporter::readFromFile(string& impFileName) {
       // can't find it. just use name
       fullName = name;
     }
+    
+    // parse out charge
+    string chargeStr("");
+    string::size_type chargeStrPos = 0;
+    if ((chargeStrPos = comments.find("Charge=", 0)) != string::npos) {
+      if (chargeStrPos + 7 > comments.length() -1) {
+	g_log->error("MSP IMPORT", "Badly formatted .msp file. Library creation truncated at point of error.");
+	pc.done();
+	return;
+      }
+      chargeStr = nextToken(comments, chargeStrPos + 7, chargeStrPos, " \t\r\n");
+      charge = atoi(chargeStr.c_str());
+    } else {
+      // can't find charge field in comments, parse the Name
+      string::size_type slashPos = name.rfind('/');
+      if (slashPos != string::npos && slashPos < name.length() - 1) {
+        charge = atoi(name.substr(slashPos + 1).c_str());
+      } else {
+	// no charge anywhere. hopefully it is in FullName. if not we will assume charge = 0
+      }
+    }
+      
     
     // to avoid trouble, removes the '(O)' piece for methionine oxidation (mods should take care of it anyway)
     string::size_type openParenPos = fullName.find("(O)");
@@ -221,11 +244,28 @@ void SpectraSTMspLibImporter::readFromFile(string& impFileName) {
       
       if (precursorMz < 0.001) {
 	// no precursor m/z specified,
-        unsigned int charge = 0;
-        string::size_type slashPos = fullName.rfind('/');
-        if (slashPos != string::npos && slashPos < fullName.length() - 1) {
-          charge = atoi(fullName.substr(slashPos + 1).c_str());
-        }
+	string chargeStr("");
+        string::size_type chargeStrPos = 0;
+        if ((chargeStrPos = comments.find("Charge=", 0)) != string::npos) {
+          if (chargeStrPos + 7 > comments.length() -1) {
+	    g_log->error("MSP IMPORT", "Badly formatted .msp file. Library creation truncated at point of error.");
+	    pc.done();
+	    return;
+	  }
+          chargeStr = nextToken(comments, chargeStrPos + 7, chargeStrPos, " \t\r\n");
+          charge = atoi(chargeStr.c_str());
+	} else {
+          string::size_type slashPos = fullName.rfind('/');
+          if (slashPos != string::npos && slashPos < fullName.length() - 1) {
+            charge = atoi(fullName.substr(slashPos + 1).c_str());
+          } else {
+	    slashPos = name.rfind('/'); 
+	    if (slashPos != string::npos && slashPos < name.length() - 1) {
+               charge = atoi(name.substr(slashPos + 1).c_str());
+	    }
+	  }
+	}
+	
 	// try to calculate from MW and charge
         if (charge > 0) {
 	  precursorMz = mw / (double)charge;
@@ -251,7 +291,7 @@ void SpectraSTMspLibImporter::readFromFile(string& impFileName) {
     
     } else {
       
-      Peptide* pep = createPeptide(fullName, 0, mods, "", "MSP");
+      Peptide* pep = createPeptide(fullName, charge, mods, fullName, "MSP");
        
       if (pep) {
       

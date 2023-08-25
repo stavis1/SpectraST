@@ -391,7 +391,6 @@ bool Peptide::setModByToken(string token, unsigned int pos, char terminus) {
 	
 	if (token.length() > 3 && token[1] == '[' && token[token.size() - 1] == ']') {
  	  string modType = token.substr(2, token.size() - 3); // the modType is the same as what is in the bracket
-	  cerr << "to be setModByType: " << modType << endl;
 	  return (setModByType(modType, pos, terminus));
 	}
       }
@@ -1173,6 +1172,7 @@ void Peptide::defaultTables() {
   (*modAverageMassTable)["AB_old_ICATd8"] = 450.6221;
   (*modAverageMassTable)["ICAT-D:2H(8)"] = 450.6221; // PSI new name
 
+  (*modAverageMassTable)["CAM"] = 57.0513;
   (*modAverageMassTable)["Carbamidomethyl"] = 57.0513;
   (*modAverageMassTable)["SecCarbamidomethyl"] = 103.9463;
 
@@ -1320,7 +1320,7 @@ void Peptide::defaultTables() {
   (*modMonoisotopicMassTable)["AB_old_ICATd8"] =  450.275205;
   (*modMonoisotopicMassTable)["ICAT-D:2H(8)"] =  450.275205; // PSI new name
   
-
+  (*modMonoisotopicMassTable)["CAM"] = 57.021464;
   (*modMonoisotopicMassTable)["Carbamidomethyl"] = 57.021464;
   (*modMonoisotopicMassTable)["SecCarbamidomethyl"] = 104.965913;
   
